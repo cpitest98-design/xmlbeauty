@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" class="antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ title if title else "XML Beauty" }}</title>
+
+  <!-- fonts + tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- your custom css -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50">
+
+  <!-- Top ribbon (keeps visible brand) -->
+  <header class="w-full bg-blue-600 text-white shadow-sm">
+    <div class="mx-auto px-6 py-3" style="max-width:96vw;">
+      <div class="flex items-center gap-3">
+        <div class="text-lg font-semibold">XML Beauty</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- main content -->
+  <main class="flex-1 w-full">
+    <div class="mx-auto px-6 py-8" style="max-width:96vw;">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- footer (minimal) -->
+  <footer class="w-full border-t bg-white/60">
+    <div class="mx-auto px-6 py-4" style="max-width:96vw;">
+      <div class="text-sm text-slate-500">© {{ now.year if now else '' }} XML Beauty</div>
+    </div>
+  </footer>
+<footer class="container" style="text-align:center;margin-top:8px;">
+  <a href="/privacy" style="color:#64748b;text-decoration:none;">Privacy</a>
+</footer>
+
+</body>
+</html>

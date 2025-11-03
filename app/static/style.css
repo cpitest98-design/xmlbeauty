@@ -1,0 +1,241 @@
+/* =========================
+   XML Beauty - main stylesheet
+   ========================= */
+
+/* Global */
+:root { --max-w: 96vw; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+/* Top blue ribbon (if used) */
+.top-ribbon {
+  background-color: #2563eb;
+  color: white;
+  padding: 8px 0;              /* ↓ was 10px */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  margin-bottom: 6px;          /* ↓ adds just a small gap below ribbon */
+}
+.ribbon-content {
+  max-width: 96vw;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.ribbon-content h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* Page container */
+.formatter-page {
+  max-width: var(--max-w);
+  margin: 4px auto;            /* ↓ tighter overall margin */
+  padding: 8px 12px;           /* ↓ less padding */
+  height: calc(100vh - 48px);  /* adjust slightly due to smaller ribbon */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;                    /* ↓ less gap between elements */
+}
+
+/* Header (if present on pages) */
+.formatter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e6eaf3;
+  border-radius: 8px;
+  padding: 12px;
+}
+.formatter-header h2 { margin: 0; font-size: 1.1rem; }
+.formatter-header p { margin: 4px 0 0; color: #64748b; font-size: 0.9rem; }
+.header-right { display: flex; gap: 12px; align-items: center; }
+
+/* Grid layout */
+.formatter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;                    /* ↓ was 12px */
+  flex: 1;
+  min-height: 0;
+}
+
+/* Panel */
+.formatter-panel {
+  background: #fff;
+  border: 1px solid #e6eaf3;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;                /* ↓ was 12px */
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #475569;
+  margin-bottom: 6px;          /* ↓ was 8px */
+  font-size: 0.9rem;
+}
+
+/* Buttons and controls */
+.panel-actions, .panel-tools { display: flex; gap: 8px; align-items: center; }
+button, select, input[type="file"] {
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  cursor: pointer;
+}
+button.primary { background: #2563eb; color: #fff; border: none; }
+.message { color: #dc2626; margin-top: 8px; font-size: 0.9rem; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .formatter-grid { grid-template-columns: 1fr; }
+  .xml-textarea, .xml-pre { height: 45vh; }
+}
+
+/* === Lined textarea (input) & output styles === */
+/* Container that holds line numbers + textarea */
+.lined-textarea {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-height: 58vh;
+  height: 58vh;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Roboto Mono", monospace;
+}
+
+/* Line numbers column - slightly smaller font, a bit wider to fit icon.
+   IMPORTANT: overflow hidden so the column does NOT show its own scrollbar. */
+.line-numbers {
+  background: #f1f5f9;
+  color: #64748b;
+  text-align: right;
+  padding: 8px 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  user-select: none;
+  border-right: 1px solid #cbd5e1;
+  white-space: pre;
+  min-width: 52px;   /* slightly wider so icon fits without shifting numbers */
+  overflow: hidden;  /* hide its own scrollbar; textarea scroll drives it */
+}
+
+/* Each line container inside the column */
+.line-numbers div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 18px;             /* tighter vertical spacing */
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+/* small span for the number (keeps width stable) */
+.line-numbers .line-num {
+  min-width: 1.2em;
+  display: inline-block;
+  text-align: right;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+/* Icon container (hidden by default; JS toggles display) */
+/* Icon container (hidden by default; shown when parent row has .error-line) */
+.line-numbers .error-icon {
+  visibility: hidden;
+  width: 14px;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1;
+  margin-left: 2px;
+  vertical-align: middle;
+  opacity: 0.95;
+  transition: transform 150ms ease, opacity 150ms ease;
+  transform-origin: center;
+  transform: scale(0.9);
+}
+
+/* when a row is marked .error-line show its icon */
+.line-numbers .error-line .error-icon {
+  visibility: visible;
+  display: inline-block;
+  transform: scale(1);
+  opacity: 1;
+}
+
+
+/* Input textarea itself */
+.xml-textarea {
+  flex: 1;
+  resize: none;
+  padding: 10px;
+  border: none;
+  outline: none;
+  font-size: 12px;          /* slightly smaller to match line height */
+  font-family: inherit;
+  line-height: 1.45;
+  background: transparent;
+  color: #0f172a;
+  overflow: auto;
+  height: 100%;
+}
+
+/* Output area (pre) - fixed height + scroll */
+.xml-pre {
+  width: 100%;
+  max-height: 60vh;
+  height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+  font-size: 13px;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* Keep line numbers scrolling synced with textarea (JS will copy scrollTop) */
+.lined-textarea textarea { scrollbar-width: thin; }
+
+/* === Error highlight styles === */
+/* Highlighted line in the numbers column */
+.error-line {
+  background-color: #fee2e2;   /* light red */
+  color: #b91c1c;              /* red text */
+  font-weight: 600;
+  border-right: 2px solid #b91c1c;
+}
+
+/* Smaller icon pulse for the exclamation */
+.error-icon {
+  font-size: 10px;
+  margin-left: 2px;
+  opacity: 0.95;
+  animation: pulseWarn 1.4s infinite;
+}
+
+/* Tooltip cursor */
+.error-icon[title] { cursor: help; }
+
+/* Pulse animation */
+@keyframes pulseWarn {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}

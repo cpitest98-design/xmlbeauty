@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="/static/style.css">
+<div class="formatter-page">
+  <div class="formatter-panel">
+    <div class="panel-header"><span>Privacy Policy</span></div>
+    <div style="background:#fff;padding:12px;border:1px solid #e6eaf3;border-radius:8px;">
+      <p>XML Beauty respects your privacy. We may use cookies and third-party services (e.g., Google AdSense/Analytics) to serve ads and measure usage. Third parties may use cookies to serve ads based on your visits.</p>
+      <p>You can opt out of personalized ads via your Google Ads settings. We do not sell personal data.</p>
+      <p>Contact: <a href="mailto:admin@example.com">cpitest98@gmail.com</a></p>
+      <p>Effective date: {{ now.strftime('%Y-%m-%d') if now else '' }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

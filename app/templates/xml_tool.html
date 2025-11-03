@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="/static/style.css">
+
+<div class="formatter-page">
+  <div class="formatter-grid">
+    <!-- Left: Input -->
+    <div class="formatter-panel">
+      <div class="panel-header">
+        <span>Input XML</span>
+        <div class="panel-tools">
+          <select id="indentSelect" title="Tab size">
+            <option value="2">2 spaces</option>
+            <option value="4" selected>4 spaces</option>
+          </select>
+          <button id="formatBtn" class="btn primary">Format</button>
+          <button id="minifyBtn" class="btn">Minify</button>
+        </div>
+      </div>
+
+      <div class="lined-textarea">
+        <div id="lineNumbers" class="line-numbers"></div>
+        <textarea id="xmlInput" spellcheck="false" class="xml-textarea" placeholder="Paste or type XML here..."></textarea>
+      </div>
+
+      <div class="panel-actions">
+        <input id="fileUpload" type="file" accept=".xml,text/xml" class="file-input">
+        <button id="clearBtn" class="btn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Right: Output -->
+    <div class="formatter-panel">
+      <div class="panel-header">
+        <span>Output</span>
+        <div class="panel-tools">
+          <button id="copyOut" class="btn">Copy</button>
+          <button id="downloadOut" class="btn">Download</button>
+          <button id="toJsonBtn" class="btn">XML → JSON</button>
+        </div>
+      </div>
+      <pre id="xmlOutput" class="xml-pre"></pre>
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById('xmlInput');
+  const output = document.getElementById('xmlOutput');
+  const message = document.getElementById('message');
+  const fileInput = document.getElementById('fileUpload');
+  const formatBtn = document.getElementById('formatBtn');
+  const minifyBtn = document.getElementById('minifyBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const copyBtn = document.getElementById('copyOut');
+  const downloadBtn = document.getElementById('downloadOut');
+  const toJsonBtn = document.getElementById('toJsonBtn');
+  const indentSelect = document.getElementById('indentSelect');
+  const lineNumbers = document.getElementById('lineNumbers');
+
+  // sync scrolling: textarea scroll controls the numbers column
+  input.addEventListener('scroll', () => {
+    lineNumbers.scrollTop = input.scrollTop;
+  });
+
+  // ----------------------------
+  // Stable line numbers renderer
+  // ----------------------------
+  function updateLineNumbers() {
+    const lines = Math.max(1, input.value.split('\n').length);
+    const existing = lineNumbers.children.length;
+
+    // If same count, do nothing (preserves icons)
+    if (existing === lines) return;
+
+    // Rebuild DOM (keeps structure predictable)
+    const frag = document.createDocumentFragment();
+    for (let i = 1; i <= lines; i++) {
+      const row = document.createElement('div');
+      row.dataset.line = String(i);
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'line-num';
+      numSpan.textContent = i;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'error-icon';
+      iconSpan.style.display = 'none'; // hidden by default
+      iconSpan.setAttribute('aria-hidden', 'true');
+      iconSpan.textContent = '⚠️';
+
+      row.appendChild(numSpan);
+      row.appendChild(iconSpan);
+      frag.appendChild(row);
+    }
+
+    // Replace children atomically
+    lineNumbers.innerHTML = '';
+    lineNumbers.appendChild(frag);
+  }
+
+  // Keep numbers updated on input
+  input.addEventListener('input', () => {
+    updateLineNumbers();
+  });
+
+  // initial build
+  window.addEventListener('load', updateLineNumbers);
+
+  // ----------------------------
+  // Actions + server calls
+  // ----------------------------
+  async function doAction(path, xmlText, extra = {}) {
+    const form = new FormData();
+    form.append('xml_text', xmlText);
+    for (const [k, v] of Object.entries(extra)) form.append(k, v);
+    const res = await fetch(path, { method: 'POST', body: form });
+
+    // Expect JSON responses from server endpoints
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    if (!res.ok) {
+      if (isJson) {
+        const err = await res.json().catch(() => ({ error: 'Server error' }));
+        return { error: err.error || err };
+      } else {
+        const txt = await res.text().catch(() => 'Server error');
+        return { error: txt };
+      }
+    }
+    if (isJson) {
+      const data = await res.json();
+      return data;
+    } else {
+      const txt = await res.text();
+      return { pretty: txt };
+    }
+  }
+
+  async function doFormat() {
+    const xml = input.value;
+    if (!xml.trim()) { message.textContent = 'Please enter XML first.'; return; }
+
+    // clear previous highlights but keep DOM structure
+    // hide all icons and remove classes
+    lineNumbers.querySelectorAll('div').forEach(div => {
+      div.classList.remove('error-line');
+      const icon = div.querySelector('.error-icon');
+      if (icon) { icon.style.display = 'none'; icon.removeAttribute('title'); }
+    });
+
+    updateLineNumbers(); // ensure numbers present
+
+    const res = await doAction('/xml/format', xml, { indent_spaces: indentSelect.value });
+    if (res.error) {
+      message.textContent = res.error;
+      if (res.line) highlightErrorLine(res.line, res.error);
+      return;
+    }
+
+    // success
+    output.textContent = res.pretty || '';
+    message.textContent = 'XML formatted successfully.';
+    updateLineNumbers();
+  }
+
+  async function doMinify() {
+    const xml = input.value;
+    if (!xml.trim()) { message.textContent = 'Please enter XML first.'; return; }
+    const res = await doAction('/xml/minify', xml);
+    if (res.error) {
+      message.textContent = res.error;
+      if (res.line) highlightErrorLine(res.line, res.error);
+      return;
+    }
+    output.textContent = res.pretty || '';
+    updateLineNumbers();
+  }
+
+  async function doConvert() {
+    const xml = input.value;
+    if (!xml.trim()) { message.textContent = 'Please enter XML first.'; return; }
+    const res = await doAction('/xml/convert', xml);
+    if (res.error) {
+      message.textContent = res.error;
+      if (res.line) highlightErrorLine(res.line, res.error);
+      return;
+    }
+    output.textContent = JSON.stringify(res, null, 2);
+  }
+
+  // file load
+  fileInput.addEventListener('change', async (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const txt = await f.text();
+    input.value = txt;
+    updateLineNumbers();
+  });
+
+  // wiring buttons
+  formatBtn.onclick = doFormat;
+  minifyBtn.onclick = doMinify;
+  toJsonBtn.onclick = doConvert;
+  clearBtn.onclick = () => { input.value=''; output.textContent=''; message.textContent=''; fileInput.value=''; updateLineNumbers(); };
+  copyBtn.onclick = () => { navigator.clipboard.writeText(output.textContent || ''); };
+  downloadBtn.onclick = () => {
+    const blob = new Blob([output.textContent || ''], { type: 'application/xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'output.xml';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // ----------------------------
+  // Robust highlight (preserves DOM & icon)
+  // ----------------------------
+  function highlightErrorLine(lineNum, messageText){
+  // ensure rows exist
+  updateLineNumbers();
+
+  // clear any previous highlight + tooltip
+  lineNumbers.querySelectorAll('div').forEach(div => {
+    div.classList.remove('error-line');
+    const ic = div.querySelector('.error-icon');
+    if (ic) ic.removeAttribute('title');
+  });
+
+  // find the row (fallback to last row)
+  let target = lineNumbers.querySelector(`div[data-line="${lineNum}"]`);
+  if (!target) {
+    const all = lineNumbers.querySelectorAll('div');
+    target = all[all.length - 1] || null;
+    if (!target) return;
+  }
+
+  // add visual class (CSS will show the icon)
+  target.classList.add('error-line');
+  const icon = target.querySelector('.error-icon');
+  if (icon && messageText) icon.title = messageText;
+
+  // scroll textarea to show the line (rough estimate)
+  const lh = parseFloat(getComputedStyle(input).lineHeight) || 18;
+  input.scrollTo({ top: Math.max(0, (lineNum - 1) * lh - lh*3), behavior: 'smooth' });
+
+  // sync numbers column to textarea scroll
+  lineNumbers.scrollTop = input.scrollTop;
+}
+
+
+
+</script>
+{% endblock %}
